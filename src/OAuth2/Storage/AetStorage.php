@@ -4,7 +4,7 @@ namespace OAuth2\Storage;
 
 class AetStorage implements
     AccessTokenInterface,
-    ClientCredentialsInterface, 
+    ClientCredentialsInterface,
     UserCredentialsInterface
 {
     protected $db;
@@ -27,7 +27,7 @@ class AetStorage implements
 
 
         $connection = array('dsn' => $dsn, 'username' => $username, 'password' => $password);
-        
+
         if (!$connection instanceof \PDO) {
             if (is_string($connection)) {
                 $connection = array('dsn' => $connection);
@@ -56,7 +56,7 @@ class AetStorage implements
             'access_token_table' => 'oauth_access_tokens',
             'refresh_token_table' => 'oauth_refresh_tokens',
             'code_table' => 'oauth_authorization_codes',
-            'user_table' => 'web_ira',
+            'user_table' => 'users',
             'jwt_table'  => 'oauth_jwt',
             'jti_table'  => 'oauth_jti',
             'scope_table'  => 'oauth_scopes',
@@ -295,8 +295,7 @@ class AetStorage implements
     // plaintext passwords are bad!  Override this for your application
     protected function checkPassword($user, $password)
     {
-//        return $user['password'] == sha1($password);
-        return $user['password'] == $password;
+        return password_verify($password, $user['password']);
     }
 
     public function getUser($username)
@@ -304,10 +303,10 @@ class AetStorage implements
         $params = array(
             'username' => $username
         );
-        
+
         $this->ci_ira_model->fxconnect();
         $fxuser = $this->ci_ira_model->fxquery('web_ira', $params, 1);
-        
+
         if($fxuser){
             // Oauth TokenController required user_id field
             $fxuser[0]['user_id'] = $fxuser[0]['username'];
@@ -327,8 +326,8 @@ class AetStorage implements
         return array_merge(array(
             'user_id' => $username
         ), $userInfo);
-    } 
-    
+    }
+
     public function setUser($username, $password, $firstName = null, $lastName = null)
     {
         // do not store in plaintext
@@ -458,20 +457,20 @@ class AetStorage implements
     }
 
     public function delete_user_access_tokens($user_id){
-        
+
         $sql = "DELETE FROM oauth_access_tokens WHERE user_id = :user_id";
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':user_id', $user_id);  
+        $stmt->bindParam(':user_id', $user_id);
         $stmt->execute();
 
     }
-    
+
     public function delete_expired_access_tokens(){
         $sql = "DELETE FROM oauth_access_tokens WHERE expire < now()";
-        $stmt = $this->db->prepare($sql); 
+        $stmt = $this->db->prepare($sql);
         $stmt->execute();
     }
-    
+
     /**
      * DDL to create OAuth2 database and tables for PDO storage
      *
